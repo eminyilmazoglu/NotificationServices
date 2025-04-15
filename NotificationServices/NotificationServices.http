@@ -1,0 +1,6 @@
+@NotificationServices_HostAddress = http://localhost:5206
+
+POST {{NotificationServices_HostAddress}}/notify/
+Accept: application/json
+
+###

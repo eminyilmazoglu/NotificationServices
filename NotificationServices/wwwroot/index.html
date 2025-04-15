@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SignalR Notification</title>
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.js"></script>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+        }
+
+        #messages {
+            margin-top: 20px;
+        }
+
+        .message {
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h2>📢 Bildirim Paneli</h2>
+    <div id="messages"></div>
+
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("http://localhost:5206/notifications") // backend'deki SignalR hub route
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+
+        connection.on("ReceiveNotification", function (notification) {
+            const container = document.getElementById("messages");
+            const card = document.createElement("div");
+            card.className = "message";
+            card.style.borderLeft = "6px solid " + getColor(notification.type);
+
+            const timestamp = new Date(notification.timestamp).toLocaleString();
+
+            card.innerHTML = `
+                <strong>${notification.type?.toUpperCase() || "INFO"}</strong> <em style="float:right">${timestamp}</em><br/>
+                <div style="margin-top: 5px;">${notification.message}</div>
+                ${notification.data ? `<pre style="margin-top:10px;background:#f4f4f4;padding:10px;border-radius:5px;">${JSON.stringify(notification.data, null, 2)}</pre>` : ""}
+            `;
+
+            container.prepend(card);
+        });
+
+        function getColor(type) {
+            switch ((type || "").toLowerCase()) {
+                case "error": return "#e74c3c";
+                case "success": return "#2ecc71";
+                case "warning": return "#f39c12";
+                default: return "#3498db"; // info/default
+            }
+        }
+
+        async function start() {
+            try {
+                await connection.start();
+                console.log("✅ SignalR bağlantısı kuruldu.");
+            } catch (err) {
+                console.error("Bağlantı hatası:", err);
+                setTimeout(start, 3000);
+            }
+        }
+
+        connection.onclose(start);
+        start();
+    </script>
+</body>
+</html>
